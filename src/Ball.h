@@ -28,3 +28,14 @@ void Ball_ApplyFriction(Ball* ball, Table* table);
 
 // Redraw the ball with updated position.
 void Ball_Update(Ball* ball, float dt);
+
+static inline bool Ball_IsMoving(Ball* ball)
+{
+    bool moving = true;
+
+    moving &= ball->vx != 0;
+    moving |= ball->vy != 0;
+    moving &= ball->enabled;
+
+    return moving;
+}

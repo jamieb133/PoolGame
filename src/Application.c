@@ -4,6 +4,33 @@
 #include "Application.h"
 #include "Ball.h"
 
+static StateTick _state_handlers[NUM_STATES] = {
+    Application_CueStrikeHandler,   // CUE_STRIKE
+    Application_BallMotionHandler,  // BALL_MOTION
+    Application_FinishedHandler     // FINISHED
+};
+
+static void TransitionTo(Application* app, GameState state)
+{
+    assert(NUM_STATES > state);
+    app->state = state;
+    app->tick = _state_handlers[state];
+}
+
+static bool ColorCmp(Color color1, Color color2) {
+    return (color1.r == color2.r) &&
+           (color1.g == color2.g) &&
+           (color1.b == color2.b) &&
+           (color1.a == color2.a);
+}
+
+static void ResetTurns(Application* application)
+{
+    Player* p1 = application->current_player;
+    application->current_player = application->next_player;
+    application->next_player = p1;
+}
+
 void Application_Init(Application* application, int screen_width, int screen_height, const char* name)
 {
     application->name = name;
@@ -85,38 +112,26 @@ void Application_Init(Application* application, int screen_width, int screen_hei
     Ball_Init(yel_6, black->x - (diameter * 2), black->y + (diameter * 2));
 
     // TODO: initialise cues
+
+    application->player_1.score = 0;
+    application->player_2.score = 0;
+    application->player_1.ball_color = RAYWHITE;
+    application->player_2.ball_color = RAYWHITE;
+    application->player_1.name = "Player 1";
+    application->player_2.name = "Player 2";
+    application->current_player = &application->player_1;
+    application->next_player = &application->player_2;
+    application->pocketed = 0;
+    TransitionTo(application, CUE_STRIKE);
 }
 
-void Application_Update(Application* application)
+void Application_Update(Application* app)
 {
-    float dt = GetFrameTime();
-
     // Redraw the static game table.
-    Table_Draw(&application->table);
+    Table_Draw(&app->table);
 
-    // Update ball physics.
-    for (int i = 0; i < 16; i++)
-    {
-        Ball* ball = &application->balls[i];
-
-        // Check for collisions with walls of the table.
-        Ball_CheckCushionCollision(ball, &application->table);
-
-        // Check for collisions with other balls.
-        for (int j = 0; j < 16; j++)
-        {
-            if (i == j)
-                continue;
-            Ball* ball2 = &application->balls[j];
-            Ball_CheckBallCollision(ball, ball2);
-        }
-
-        // Must apply some friction to stop the balls just whacking away indefinitely.
-        Ball_ApplyFriction(ball, &application->table);
-
-        // Redraw the ball with updated velocity. 
-        Ball_Update(ball, dt); 
-    }
+    // Tick state machine,
+    app->tick(app);
 }
 
 void Application_Run(Application* application)
@@ -137,4 +152,81 @@ void Application_Run(Application* application)
     }
 
     CloseWindow();
+}
+
+void Application_CueStrikeHandler(struct Application* app)
+{
+    // TODO
+    TransitionTo(app, BALL_MOTION);
+}
+
+void Application_BallMotionHandler(struct Application* app)
+{
+    float dt = GetFrameTime();
+    bool in_motion = false;
+
+    // Update ball physics.
+    for (int i = 0; i < 16; i++)
+    {
+        Ball* ball = &app->balls[i];
+
+        // Check if the ball was pocketed, kaching.
+        if (Ball_CheckIfPocketed(ball, &app->table))
+        {
+            if (ColorCmp(ball->color, BLACK))
+            {
+                break;
+            }
+
+            if (ColorCmp(ball->color, app->current_player->ball_color))
+            {
+                app->current_player->score++;
+            }
+            else 
+            {
+                
+                if (!ColorCmp(ball->color, WHITE))
+                {
+                    // Potted opponent's ball... :(
+                    app->next_player->score++;
+                }
+            }
+            continue;
+        }
+
+        // Check for collisions with walls of the table.
+        Ball_CheckCushionCollision(ball, &app->table);
+
+        // Check for collisions with other balls.
+        for (int j = 0; j < 16; j++)
+        {
+            if (i == j)
+                continue;
+            Ball* ball2 = &app->balls[j];
+            Ball_CheckBallCollision(ball, ball2);
+        }
+
+        // Must apply some friction to stop the balls just whacking away indefinitely.
+        Ball_ApplyFriction(ball, &app->table);
+
+        // Redraw the ball with updated velocity. 
+        Ball_Update(ball, dt); 
+
+        // Prevent state transition until all balls have stopped.
+        if (Ball_IsMoving(ball))
+        {
+            in_motion = true;
+        }
+    }
+
+    // If all balls have stopped moving then prepare for the next shot.
+    if (!in_motion)
+    {
+        TransitionTo(app, CUE_STRIKE);
+    }
+}
+
+void Application_FinishedHandler(struct Application* app)
+{
+    // TODO
 }
