@@ -2,6 +2,7 @@
 
 #include "Ball.h"
 #include "Table.h"
+#include "Cue.h"
 
 typedef enum {
     CUE_STRIKE,
@@ -27,6 +28,7 @@ typedef struct Application {
     Ball* black_ball;
     Ball* white_ball;
     Table table;
+    Cue cue;
     int pocketed;
 
     GameState state;

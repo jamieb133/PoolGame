@@ -31,6 +31,15 @@ static void ResetTurns(Application* application)
     application->next_player = p1;
 }
 
+static void DrawBalls(Application* app, float dt)
+{
+    for (int i = 0; i < 16; i++)
+    {
+        Ball* ball = &app->balls[i];
+        Ball_Update(ball, dt);
+    }
+}
+
 void Application_Init(Application* application, int screen_width, int screen_height, const char* name)
 {
     application->name = name;
@@ -127,8 +136,11 @@ void Application_Init(Application* application, int screen_width, int screen_hei
 
 void Application_Update(Application* app)
 {
-    // Redraw the static game table.
+    float dt = GetFrameTime();
+
+    // Draw game entities.
     Table_Draw(&app->table);
+    DrawBalls(app, dt);
 
     // Tick state machine,
     app->tick(app);
@@ -208,9 +220,6 @@ void Application_BallMotionHandler(struct Application* app)
 
         // Must apply some friction to stop the balls just whacking away indefinitely.
         Ball_ApplyFriction(ball, &app->table);
-
-        // Redraw the ball with updated velocity. 
-        Ball_Update(ball, dt); 
 
         // Prevent state transition until all balls have stopped.
         if (Ball_IsMoving(ball))
