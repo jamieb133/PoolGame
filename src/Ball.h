@@ -15,6 +15,8 @@ typedef struct {
 // Initialise a stationary ball at the given coordinates.
 void Ball_Init(Ball* ball, int x, int y);
 
+bool Ball_CheckIfPocketed(Ball* ball, Table* table);
+
 // Apply required velocity change if ball has hit a cushion.
 void Ball_CheckCushionCollision(Ball* ball, Table* table);
 

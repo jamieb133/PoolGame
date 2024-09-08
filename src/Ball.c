@@ -45,6 +45,30 @@ static void HandleBallCollision(Ball* a, Ball* b)
     // TODO: handle ball overlap
 }
 
+bool Ball_CheckIfPocketed(Ball* ball, Table* table)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        Pocket* p = &table->pockets[i];
+        int x_min = p->x - p->radius; 
+        int x_max = p->x + p->radius;
+        int y_min = p->y - p->radius;
+        int y_max = p->y + p->radius;
+
+        if ((ball->x >= x_min) &&
+            (ball->x <= x_max) &&
+            (ball->y >= y_min) &&
+            (ball->y <= y_max))
+        {
+            // Ball pocketed.
+            ball->enabled = false;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void Ball_Init(Ball* ball, int x, int y)
 {
     ball->x = x;
@@ -59,7 +83,7 @@ void Ball_CheckCushionCollision(Ball* ball, Table* table)
     int x_min = table->felt.x;
     int x_max = table->felt.x + table->felt.width;
     int y_min = table->felt.y;
-    int y_max = table->felt.y - table->felt.height;
+    int y_max = table->felt.y + table->felt.height;
 
     if ((ball->x - ball->radius <= x_min)
         && (ball->vx < 0)) // Don't reverse velocity if already travelling away.
