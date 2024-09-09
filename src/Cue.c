@@ -20,7 +20,7 @@ static Rectangle RectangleRotationTransform(Rectangle rect, Vector2 rotation_poi
     };
 }
 
-void Cue_Init(Cue* cue, Vector2 pos, Vector2 size)
+void Cue_Init(Cue* cue, Vector2 pos, Vector2 size, float charge_rate)
 {
     // TODO: fix size
 
@@ -35,23 +35,19 @@ void Cue_Init(Cue* cue, Vector2 pos, Vector2 size)
 
     // Reset the chargebar location.
     Vector2 chargebar_loc = { pos.x, pos.y + 25.0f/*TODO scaled offset*/ };
-    Vector2 chargebar_size = { 25, 50 };//TODO
-    ChargeBar_Init(&cue->charge_bar, chargebar_loc, chargebar_size);  
+    Vector2 chargebar_size = { 50, 25 };//TODO
+    ChargeBar_Init(&cue->charge_bar, chargebar_loc, chargebar_size, charge_rate);  
 }
 
 void Cue_Draw(Cue* cue, float dt)
 {
     // TODO: update pos based on vel
 
-    // TODO: based on time not frame
-    static float charge = 0.0f;
-    //charge = (charge >= 1.0f) ? charge - 0.01f : charge + 0.01f;
-
     Vector2 origin = {  0.0f, 0.0f };
     Rectangle trans_cue = RectangleRotationTransform(cue->shaft, (Vector2) { cue->shaft.x - cue_offset_, cue->shaft.y }, cue->rotation);
 
     DrawRectanglePro(trans_cue, origin, cue->rotation, DARKBROWN);
-    ChargeBar_Draw(&cue->charge_bar, charge);
+    ChargeBar_Draw(&cue->charge_bar);
 }
 
 void Cue_RotateClockwise(Cue* cue, float dt)
@@ -67,4 +63,19 @@ void Cue_RotateAnticlockwise(Cue* cue, float dt)
 void Cue_EnableChargeBar(Cue* cue, bool enable)
 {
     cue->charge_bar.enabled = enable;   
+}
+
+void Cue_UpdateCharge(Cue* cue, float dt)
+{
+    if ((cue->charge_bar.charge >= 1.0f)
+        || (cue->charge_bar.charge <= 0.0f))    
+    {
+        cue->charge_bar.charge_vel *= -1.0f;
+    }
+
+    cue->charge_bar.charge += cue->charge_bar.charge_vel * dt;
+    cue->charge_bar.charge = (cue->charge_bar.charge > 1.0f) ? 1.0f : cue->charge_bar.charge;
+    cue->charge_bar.charge = (cue->charge_bar.charge < 0.0f) ? 0.0f : cue->charge_bar.charge;
+
+    TraceLog(LOG_WARNING, "Charge is %f", cue->charge_bar.charge);
 }

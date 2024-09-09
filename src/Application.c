@@ -218,7 +218,8 @@ void CueAimEntryAction(struct Application* app)
     Cue_Init(
         &app->cue, 
         (Vector2) { app->white_ball->x, app->white_ball->y }, 
-        (Vector2) { app->screen_width / 240.0f, app->screen_width / 8.0f }
+        (Vector2) { app->screen_width / 240.0f, app->screen_width / 8.0f },
+        2.0f
     );
 }
 
@@ -239,25 +240,26 @@ void CueAimHandler(struct Application* app)
     if (IsKeyDown(KEY_SPACE))
     {
         // Player is charging up a shot.
-        Cue_EnableChargeBar(&app->cue, true);
         TransitionTo(app, CUE_CHARGE);
     }
 }
 
 void CueChargeEntryAction(struct Application* app)
 {
-    // TODO
+    Cue_EnableChargeBar(&app->cue, true);
 }
 
 void CueChargeHandler(struct Application* app)
 {
+    float dt = GetFrameTime();
+
+    Cue_UpdateCharge(&app->cue, dt);
 
     if (!IsKeyDown(KEY_SPACE))
     {   
         // TODO
         //TransitionTo(app, CUE_STRIKE);
 
-        Cue_EnableChargeBar(&app->cue, false);
         TransitionTo(app, CUE_AIM);
     }
 }
