@@ -1,27 +1,63 @@
 #include <raylib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include "Application.h"
 #include "Ball.h"
+#include "Utils.h"
+#include "Logger.h"
 
-static StateTick _state_handlers[NUM_STATES] = {
-    Application_CueStrikeHandler,   // CUE_STRIKE
-    Application_BallMotionHandler,  // BALL_MOTION
-    Application_FinishedHandler     // FINISHED
+// State handlers.
+static void CueAimHandler(struct Application* app);
+static void CueChargeHandler(struct Application* app);
+static void CueStrikeHandler(struct Application* app);
+static void BallMotionHandler(struct Application* app);
+static void FinishedHandler(struct Application* app);
+
+// State entry actions.
+static void CueAimEntryAction(struct Application* app);
+static void CueChargeEntryAction(struct Application* app);
+static void CueStrikeEntryAction(struct Application* app);
+static void BallMotionEntryAction(struct Application* app);
+static void FinishedEntryAction(struct Application* app);
+
+static StateTick state_handlers_[NUM_STATES] = {
+    CueAimHandler,      // CUE_AIM
+    CueChargeHandler,   // CUE_CHARGE
+    CueStrikeHandler,   // CUE_STRIKE
+    BallMotionHandler,  // BALL_MOTION
+    FinishedHandler     // FINISHED
+};
+
+static StateAction state_entry_actions_[NUM_STATES] = {
+    CueAimEntryAction,      // CUE_AIM
+    CueChargeEntryAction,   // CUE_CHARGE
+    CueStrikeEntryAction,   // CUE_STRIKE
+    BallMotionEntryAction,  // BALL_MOTION
+    FinishedEntryAction     // FINISHED
+};
+
+static const char* state_strings_[NUM_STATES] = {
+    "CUE_AIM",      // CUE_AIM
+    "CUE_CHARGE",   // CUE_CHARGE
+    "CUE_STRIKE",   // CUE_STRIKE
+    "BALL_MOTION",  // BALL_MOTION
+    "FINISHED"      // FINISHED
 };
 
 static void TransitionTo(Application* app, GameState state)
 {
     assert(NUM_STATES > state);
+    TraceLog(LOG_INFO, "State transition %s --> %s", 
+        state_strings_[app->state], state_strings_[state]);
     app->state = state;
-    app->tick = _state_handlers[state];
+    app->state_handler = state_handlers_[state];
+    state_entry_actions_[state](app);
 }
 
-static bool ColorCmp(Color color1, Color color2) {
-    return (color1.r == color2.r) &&
-           (color1.g == color2.g) &&
-           (color1.b == color2.b) &&
-           (color1.a == color2.a);
+static void TickState(Application* app)
+{
+    app->state_handler(app);
 }
 
 static void ResetTurns(Application* application)
@@ -29,6 +65,11 @@ static void ResetTurns(Application* application)
     Player* p1 = application->current_player;
     application->current_player = application->next_player;
     application->next_player = p1;
+}
+
+static void DrawTable(Application* app)
+{
+    Table_Draw(&app->table);
 }
 
 static void DrawBalls(Application* app, float dt)
@@ -40,8 +81,29 @@ static void DrawBalls(Application* app, float dt)
     }
 }
 
+static void DrawCue(Application* app, float dt)
+{
+    Cue_Draw(&app->cue, dt);
+}
+
+static void TickApplication(Application* app)
+{
+    float dt = GetFrameTime();
+
+    // Draw game entities.
+    DrawTable(app);
+    DrawCue(app, dt);
+    DrawBalls(app, dt);
+
+    // Tick state machine,
+    TickState(app);
+}
+
 void Application_Init(Application* application, int screen_width, int screen_height, const char* name)
 {
+    // Set custom logger function.
+    Logger_Init();
+
     application->name = name;
     application->screen_width = screen_width;
     application->screen_height = screen_height;
@@ -120,8 +182,6 @@ void Application_Init(Application* application, int screen_width, int screen_hei
     Ball_Init(yel_5, black->x - (diameter * 2), black->y + diameter);
     Ball_Init(yel_6, black->x - (diameter * 2), black->y + (diameter * 2));
 
-    // TODO: initialise cues
-
     application->player_1.score = 0;
     application->player_2.score = 0;
     application->player_1.ball_color = RAYWHITE;
@@ -131,19 +191,8 @@ void Application_Init(Application* application, int screen_width, int screen_hei
     application->current_player = &application->player_1;
     application->next_player = &application->player_2;
     application->pocketed = 0;
-    TransitionTo(application, CUE_STRIKE);
-}
-
-void Application_Update(Application* app)
-{
-    float dt = GetFrameTime();
-
-    // Draw game entities.
-    Table_Draw(&app->table);
-    DrawBalls(app, dt);
-
-    // Tick state machine,
-    app->tick(app);
+    application->state = CUE_AIM;
+    TransitionTo(application, CUE_AIM);
 }
 
 void Application_Run(Application* application)
@@ -157,22 +206,80 @@ void Application_Run(Application* application)
     {
         BeginDrawing();
         ClearBackground(BLUE);
-
-        Application_Update(application);
-
+        TickApplication(application);
         EndDrawing();
     }
 
     CloseWindow();
 }
 
-void Application_CueStrikeHandler(struct Application* app)
+void CueAimEntryAction(struct Application* app)
+{
+    Cue_Init(
+        &app->cue, 
+        (Vector2) { app->white_ball->x, app->white_ball->y }, 
+        (Vector2) { app->screen_width / 240.0f, app->screen_width / 8.0f }
+    );
+}
+
+void CueAimHandler(struct Application* app)
+{
+    float dt = GetFrameTime();
+
+    if (IsKeyDown(KEY_W))
+    {
+        Cue_RotateClockwise(&app->cue, dt);
+    }
+    
+    if (IsKeyDown(KEY_S))
+    {
+        Cue_RotateAnticlockwise(&app->cue, dt);
+    }
+
+    if (IsKeyDown(KEY_SPACE))
+    {
+        // Player is charging up a shot.
+        Cue_EnableChargeBar(&app->cue, true);
+        TransitionTo(app, CUE_CHARGE);
+    }
+}
+
+void CueChargeEntryAction(struct Application* app)
+{
+    // TODO
+}
+
+void CueChargeHandler(struct Application* app)
+{
+
+    if (!IsKeyDown(KEY_SPACE))
+    {   
+        // TODO
+        //TransitionTo(app, CUE_STRIKE);
+
+        Cue_EnableChargeBar(&app->cue, false);
+        TransitionTo(app, CUE_AIM);
+    }
+}
+
+
+void CueStrikeEntryAction(struct Application* app)
+{
+   // TODO 
+}
+
+void CueStrikeHandler(struct Application* app)
 {
     // TODO
     TransitionTo(app, BALL_MOTION);
 }
 
-void Application_BallMotionHandler(struct Application* app)
+void BallMotionEntryAction(struct Application* app)
+{
+    // TODO
+}
+
+void BallMotionHandler(struct Application* app)
 {
     float dt = GetFrameTime();
     bool in_motion = false;
@@ -231,11 +338,16 @@ void Application_BallMotionHandler(struct Application* app)
     // If all balls have stopped moving then prepare for the next shot.
     if (!in_motion)
     {
-        TransitionTo(app, CUE_STRIKE);
+        TransitionTo(app, CUE_AIM);
     }
 }
 
-void Application_FinishedHandler(struct Application* app)
+void FinishedEntryAction(struct Application* app)
+{
+    // TODO
+}
+
+void FinishedHandler(struct Application* app)
 {
     // TODO
 }

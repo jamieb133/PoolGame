@@ -1,19 +1,17 @@
 #pragma once
 
 #include <raylib.h>
+#include "ChargeBar.h"
 
 typedef struct {
-    Rectangle shaft;
-    Rectangle butt;
-    Rectangle tip;
+    Rectangle shaft, butt, tip;
     Vector2 position;
+    float rotation;
+    ChargeBar charge_bar;
 } Cue;
 
-void Cue_Init(Cue* cue);
-void Cue_Draw(Cue* cue);
-
-// Update the cue position such that it moves around the ball clockwise.
-void Cue_YawLeft(Cue* cue);
-
-// Update the cue position such that it moves around the ball anticlockwise.
-void Cue_YawRight(Cue* cue);
+void Cue_Init(Cue* cue, Vector2 origin, Vector2 size);
+void Cue_Draw(Cue* cue, float dt);
+void Cue_RotateClockwise(Cue* cue, float dt);
+void Cue_RotateAnticlockwise(Cue* cue, float dt);
+void Cue_EnableChargeBar(Cue* cue, bool enable);
