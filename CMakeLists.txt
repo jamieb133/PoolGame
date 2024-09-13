@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.11)
 project(PoolGame)
 
 set(CMAKE_BUILD_TYPE Debug)
-add_compile_definitions("DEBUG")
+add_compile_definitions("DEBUG" "BUILD_SHARED_LIBS=ON")
+
+if (NOT SHARED)
+  message(FATAL_ERROR "Raylib must be built as a dynamic library, pass -DSHARED=ON option to cmake")
+endif()
 
 include(FetchContent)
 
@@ -20,9 +24,13 @@ if(NOT raylib_POPULATED)
 endif()
 
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
+file(GLOB ENTRYPOINT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/entrypoint/*.c)
 
-# Add executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+# Add executable and game logic library
+add_library(${PROJECT_NAME}_Game SHARED ${SOURCES})
+add_executable(${PROJECT_NAME} ${ENTRYPOINT_SOURCES})
 
 # Link Raylib
-target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${PROJECT_NAME} PUBLIC raylib)
+target_link_libraries(${PROJECT_NAME}_Game PUBLIC raylib)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
