@@ -257,23 +257,36 @@ void CueChargeHandler(struct Application* app)
 
     if (!IsKeyDown(KEY_SPACE))
     {   
-        // TODO
-        //TransitionTo(app, CUE_STRIKE);
-
-        TransitionTo(app, CUE_AIM);
+        TransitionTo(app, CUE_STRIKE);
     }
 }
 
-
 void CueStrikeEntryAction(struct Application* app)
 {
-   // TODO 
+    // Start winding cue back for shot.
+    Cue_SetVelocity(&app->cue, 250.0f * app->cue.charge_bar.charge);
 }
 
 void CueStrikeHandler(struct Application* app)
 {
-    // TODO
-    TransitionTo(app, BALL_MOTION);
+    float dt = GetFrameTime();
+    Cue* cue = &app->cue;
+
+    // One second windup.
+    cue->prev_windtime += dt;
+
+    if (cue->prev_windtime >= 0.5f)
+    {
+        // Now start pushing the cue forward.
+        Cue_SetVelocity(cue, -250.0f * cue->charge_bar.charge);
+        cue->prev_windtime = 0.0f;
+    }
+
+    if (Cue_CheckBallContact(cue, app->white_ball))
+    {
+        // Ball contact, initiate ball motion state
+        TransitionTo(app, BALL_MOTION);
+    }
 }
 
 void BallMotionEntryAction(struct Application* app)

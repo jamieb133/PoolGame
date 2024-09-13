@@ -1,4 +1,5 @@
 #include "Cue.h"
+#include "Utils.h"
 #include <math.h>
 
 static float cue_offset_ = 25.0f;
@@ -24,6 +25,12 @@ void Cue_Init(Cue* cue, Vector2 pos, Vector2 size, float charge_rate)
 {
     // TODO: fix size
 
+    cue->pos = pos;
+    cue->origin = pos;
+    cue->velocity = (Vector2){ 0, 0 };
+    cue->acceleration = (Vector2){ 0, 0 };
+    cue->prev_windtime = 0;
+
     // Cue is 90deg to the left so height and width swapped.
     cue->shaft.width = 150;// = size.y;
     cue->shaft.height = 5;//= size.x;
@@ -41,10 +48,17 @@ void Cue_Init(Cue* cue, Vector2 pos, Vector2 size, float charge_rate)
 
 void Cue_Draw(Cue* cue, float dt)
 {
-    // TODO: update pos based on vel
-
     Vector2 origin = {  0.0f, 0.0f };
+
+    // Apply velocity.
+    cue->shaft.x += dt * cue->velocity.x;
+    cue->shaft.y += dt * cue->velocity.y;
+
     Rectangle trans_cue = RectangleRotationTransform(cue->shaft, (Vector2) { cue->shaft.x - cue_offset_, cue->shaft.y }, cue->rotation);
+
+    // Update position metadata.
+    cue->pos.x = trans_cue.x;
+    cue->pos.y = trans_cue.y;
 
     DrawRectanglePro(trans_cue, origin, cue->rotation, DARKBROWN);
     ChargeBar_Draw(&cue->charge_bar);
@@ -78,4 +92,39 @@ void Cue_UpdateCharge(Cue* cue, float dt)
     cue->charge_bar.charge = (cue->charge_bar.charge < 0.0f) ? 0.0f : cue->charge_bar.charge;
 
     TraceLog(LOG_WARNING, "Charge is %f", cue->charge_bar.charge);
+}
+
+void Cue_SetVelocity(Cue* cue, float magnitude)
+{
+    cue->velocity = MagnitudeToVector(magnitude, cue->rotation);
+}
+
+bool Cue_CheckBallContact(Cue* cue, Ball* ball)
+{
+    // Find the closest point on the rectangle to the circle's center
+    float closest_x = fmaxf(cue->shaft.x, fminf(ball->x, cue->shaft.x + cue->shaft.width));
+    float closest_y = fmaxf(cue->shaft.y, fminf(ball->y, cue->shaft.y + cue->shaft.height));
+
+    // Calculate the distance between the circle's center and this closest point
+    float distance_x = ball->x - closest_x;
+    float distance_y = ball->y - closest_y;
+
+    // Calculate the squared distance (saves computing a square root for optimization)
+    float distanceSquared = (distance_x * distance_x) + (distance_y * distance_y);
+
+    if (distanceSquared > (ball->radius * ball->radius))
+    {
+        // Not touching, do nothing.
+        return false;
+    }
+
+    // Apply impulse to the ball.
+    ball->vx += cue->velocity.x;
+    ball->vy += cue->velocity.y;
+
+    // Start decelerating. TODO
+   // cue->acceleration = 
+    cue->velocity = (Vector2) {0,0};
+
+    return true;
 }
