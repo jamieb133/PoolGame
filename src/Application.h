@@ -44,4 +44,4 @@ typedef struct Application {
 } Application;
 
 void Application_Init(Application* application, int screen_width, int screen_height, const char* name);
-void Application_Run(Application* application);
+void Application_Update(Application* application);

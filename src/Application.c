@@ -86,19 +86,6 @@ static void DrawCue(Application* app, float dt)
     Cue_Draw(&app->cue, dt);
 }
 
-static void TickApplication(Application* app)
-{
-    float dt = GetFrameTime();
-
-    // Draw game entities.
-    DrawTable(app);
-    DrawCue(app, dt);
-    DrawBalls(app, dt);
-
-    // Tick state machine,
-    TickState(app);
-}
-
 void Application_Init(Application* application, int screen_width, int screen_height, const char* name)
 {
     // Set custom logger function.
@@ -195,22 +182,17 @@ void Application_Init(Application* application, int screen_width, int screen_hei
     TransitionTo(application, CUE_AIM);
 }
 
-void Application_Run(Application* application)
+void Application_Update(Application* app)
 {
-    assert(NULL != application);
+    float dt = GetFrameTime();
 
-    InitWindow(application->screen_width, application->screen_height, application->name);
-    SetTargetFPS(60);
+    // Draw game entities.
+    DrawTable(app);
+    DrawCue(app, dt);
+    DrawBalls(app, dt);
 
-    while (!WindowShouldClose()) 
-    {
-        BeginDrawing();
-        ClearBackground(BLUE);
-        TickApplication(application);
-        EndDrawing();
-    }
-
-    CloseWindow();
+    // Tick state machine,
+    TickState(app);
 }
 
 void CueAimEntryAction(struct Application* app)
