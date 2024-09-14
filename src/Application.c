@@ -88,8 +88,12 @@ static void DrawCue(Application* app, float dt)
 
 void Application_Init(Application* application, int screen_width, int screen_height, const char* name)
 {
+    // Initialise raylib stuff
+    InitWindow(screen_width, screen_height, name);
+    SetTargetFPS(60);
+
     // Set custom logger function.
-    Logger_Init();
+    //Logger_Init(); // TODO: why is this broken?
 
     application->name = name;
     application->screen_width = screen_width;
@@ -180,11 +184,17 @@ void Application_Init(Application* application, int screen_width, int screen_hei
     application->pocketed = 0;
     application->state = CUE_AIM;
     TransitionTo(application, CUE_AIM);
+
+    application->running = true;
 }
 
 void Application_Update(Application* app)
 {
     float dt = GetFrameTime();
+
+    // Refresh the screen.
+    BeginDrawing();
+    ClearBackground(BLUE);
 
     // Draw game entities.
     DrawTable(app);
@@ -193,6 +203,23 @@ void Application_Update(Application* app)
 
     // Tick state machine,
     TickState(app);
+
+    // Frame rendering finished.
+    EndDrawing();
+    app->running = !WindowShouldClose();
+}
+
+void Application_Deinit(Application* app)
+{
+    CloseWindow();
+}
+
+void Application_Reload(Application* app)
+{
+    // On hot-reload we need to update the state handler function
+    // pointer as its location in RAM will have changed after rebuilding.
+    GameState state = app->state;
+    app->state_handler = state_handlers_[state];
 }
 
 void CueAimEntryAction(struct Application* app)

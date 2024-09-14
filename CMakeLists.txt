@@ -4,6 +4,8 @@ project(PoolGame)
 set(CMAKE_BUILD_TYPE Debug)
 add_compile_definitions("DEBUG" "BUILD_SHARED_LIBS=ON")
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 if (NOT SHARED)
   message(FATAL_ERROR "Raylib must be built as a dynamic library, pass -DSHARED=ON option to cmake")
 endif()
@@ -31,6 +33,6 @@ add_library(${PROJECT_NAME}_Game SHARED ${SOURCES})
 add_executable(${PROJECT_NAME} ${ENTRYPOINT_SOURCES})
 
 # Link Raylib
-target_link_libraries(${PROJECT_NAME} PUBLIC raylib)
-target_link_libraries(${PROJECT_NAME}_Game PUBLIC raylib)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/build/_deps/raylib-src/src)
+target_link_libraries(${PROJECT_NAME}_Game PRIVATE raylib)
