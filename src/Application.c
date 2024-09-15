@@ -20,6 +20,12 @@ void Application_Init(Application* application, int screen_width, int screen_hei
 
 void Application_Update(Application* application)
 {
+    // Reset the game of "r" is pressed
+    if (IsKeyDown(KEY_R))
+    {
+        GameContext_Init(&application->context, application->screen_width, application->screen_height);
+    }
+
     float const dt = GetFrameTime(); 
     BeginDrawing();
     GameContext_Update(&application->context, dt);
