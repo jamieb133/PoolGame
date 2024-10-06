@@ -102,7 +102,7 @@ void Table_Init(Table* table, int screen_width, int screen_height)
     table->pockets[5].radius = top_left_connector.width * pocket_scale; 
 
     // Set default friction coefficient.
-    table->friction_coeff = 0.01f;
+    table->friction_coeff = 0.05f;
 }
 
 void Table_Draw(Table* table)

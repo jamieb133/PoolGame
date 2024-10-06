@@ -5,6 +5,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 static const char* LIB_NAME = "./libPoolGame_Game.dylib";
 
@@ -20,6 +21,7 @@ static ApplicationReloadFunc ApplicationReload;
 
 static time_t current_filemod_time_;
 static void* handle_;
+static struct timespec prev_time_;
 
 static void* LoadFunction(const char* name)
 {
@@ -88,6 +90,17 @@ int main()
     while (app.running) 
     {
         ApplicationUpdate(&app);
+
+        struct timespec current_time;
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        double const dt = (current_time.tv_sec - prev_time_.tv_sec) + ((current_time.tv_nsec - prev_time_.tv_nsec) / 1e9);
+
+        if (dt < 0.5)
+        {
+            continue;
+        }
+
+        prev_time_ = current_time;
 
         if (ShouldHotReload())
         {

@@ -122,8 +122,7 @@ bool Cue_CheckBallContact(Cue* cue, Ball* ball)
     ball->vx += cue->velocity.x;
     ball->vy += cue->velocity.y;
 
-    // Start decelerating. TODO
-   // cue->acceleration = 
+    // Stop the cue on contact
     cue->velocity = (Vector2) {0,0};
 
     return true;

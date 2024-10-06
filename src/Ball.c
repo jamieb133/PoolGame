@@ -32,7 +32,7 @@ static void HandleBallCollision(Ball* a, Ball* b)
 
     // Simple elastic collision response.
     // TODO: tune this
-    float restitution = 0.2f;
+    float restitution = 0.1f;
     float impulse_scalar = -(1.0f + restitution) * velocity_along_normal;
 
     // Apply the impulse.
@@ -62,6 +62,7 @@ bool Ball_CheckIfPocketed(Ball* ball, Table* table)
         {
             // Ball pocketed.
             ball->enabled = false;
+            ball->vx = ball->vy = 0;
             return true;
         }
     }
@@ -141,12 +142,12 @@ void Ball_ApplyFriction(Ball* ball, Table* table)
 
     // Stop the ball once it gets too slow.
 
-    if (fabs(ball->vx) < 0.005)
+    if (fabs(ball->vx) < 0.001)
     {
         ball->vx = 0;
     }
 
-    if (fabs(ball->vy) < 0.005)
+    if (fabs(ball->vy) < 0.001)
     {
         ball->vy = 0;
     }

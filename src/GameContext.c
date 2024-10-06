@@ -250,7 +250,7 @@ void CueChargeHandler(GameContext* context)
 void CueStrikeEntryAction(GameContext* context)
 {
     // Start winding cue back for shot.
-    Cue_SetVelocity(&context->cue, 250.0f * context->cue.charge_bar.charge);
+    Cue_SetVelocity(&context->cue, 1000.0f * context->cue.charge_bar.charge);
 }
 
 void CueStrikeHandler(GameContext* context)
@@ -263,7 +263,7 @@ void CueStrikeHandler(GameContext* context)
     if (cue->prev_windtime >= 0.5f)
     {
         // Now start pushing the cue forward.
-        Cue_SetVelocity(cue, -250.0f * cue->charge_bar.charge);
+        Cue_SetVelocity(cue, -1000.0f * cue->charge_bar.charge);
         cue->prev_windtime = 0.0f;
     }
 
